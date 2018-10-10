@@ -10,149 +10,95 @@ var NativeStorageProxy = {
     getItem: function (win, fail, args) {
         try {
             var key = args[0];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            var passwordCredential = vault.retrieve(service, key);
-            win(passwordCredential.password);
+            var value = Windows.Storage.ApplicationData.current.localSettings.values[key];
+            // A value of undefined will throw a JSON error during the win() callback
+            if (value === undefined) {
+                fail(2);
+            }
+            else {
+                win(value);
+            }
         } catch (e) {
             fail(2);
         }
     },
     setItem: function (win, fail, args) {
         try {
-            var key = args[0];
-            var value = args[1];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            vault.add(new Windows.Security.Credentials.PasswordCredential(service, key, value));
-            win(value);
+            var key = args[0],
+                value = args[1];
+            // A value of undefined will throw a JSON error during the win() callback
+            if (value === undefined) {
+                fail(3);
+            }
+            else {
+                Windows.Storage.ApplicationData.current.localSettings.values[key] = value;
+                win(value);
+            }
         } catch (e) {
             fail(1);
         }
     },
     clear: function (win, fail, args) {
-        //todo: Clear all values in NativeStorage
         try {
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            var iVectorView = vault.retrieveAll();
-            if (iVectorView == null)
-                win();
-            for (var i = 0; i < iVectorView.size; i++) {
-                vault.remove(iVectorView[i]);
-            }
+            Windows.Storage.ApplicationData.current.localSettings.values.clear();
             win();
         } catch (e) {
-            fail();
+            fail(1);
         }
     },
     putString: function (win, fail, args) {
-        try {
-            var key = args[0];
-            var value = args[1];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            vault.add(new Windows.Security.Credentials.PasswordCredential(service, key, value));
-            win(value);
-        } catch (e) {
-            fail(1);
-        }
+        this.setItem(win, fail, args);
     },
     getString: function (win, fail, args) {
-        try {
-            var key = args[0];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            var passwordCredential = vault.retrieve(service, key);
-            win(passwordCredential.password);
-        } catch (e) {
-            fail(2);
-        }
+        this.getItem(win, fail, args);
     },
     putBoolean: function (win, fail, args) {
-        try {
-            var key = args[0];
-            var value = args[1];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            vault.add(new Windows.Security.Credentials.PasswordCredential(service, key, value));
-            win(value);
-        } catch (e) {
-            fail(1);
-        }
+        this.setItem(win, fail, args);
     },
     getBoolean: function (win, fail, args) {
-        try {
-            var key = args[0];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            var passwordCredential = vault.retrieve(service, key);
-            win(passwordCredential.password);
-        } catch (e) {
-            fail(2);
-        }
+        this.getItem(win, fail, args);
     },
     putInt: function (win, fail, args) {
-        try {
-            var key = args[0];
-            var value = args[1];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            vault.add(new Windows.Security.Credentials.PasswordCredential(service, key, value));
-            win(value);
-        } catch (e) {
-            fail(1);
-        }
+        this.setItem(win, fail, args);
     },
     getInt: function (win, fail, args) {
-        try {
-            var key = args[0];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            var passwordCredential = vault.retrieve(service, key);
-            win(parseInt(passwordCredential.password));
-        } catch (e) {
-            fail(2);
-        }
+        this.getItem(win, fail, args);
     },
     putDouble: function (win, fail, args) {
-        try {
-            var key = args[0];
-            var value = args[1];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            vault.add(new Windows.Security.Credentials.PasswordCredential(service, key, value));
-            win(value);
-        } catch (e) {
-            fail(1);
-        }
+        this.setItem(win, fail, args);
     },
     getDouble: function (win, fail, args) {
-        try {
-            var key = args[0];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            var passwordCredential = vault.retrieve(service, key);
-            win(passwordCredential.password);
-        } catch (e) {
-            fail(2);
-        }
+        this.getItem(win, fail, args);
     },
     remove: function (win, fail, args) {
         try {
-            var key = args[0];
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            var passwordCredential = vault.retrieve(service, key);
-            if (passwordCredential) {
-                vault.remove(passwordCredential);
+            var values = Windows.Storage.ApplicationData.current.localSettings.values,
+                key = args[0];
+            if (values.hasKey(key)) {
+                values.remove(key);
+                win(key);
             }
-            win(key);
+            else {
+                fail(2);
+            }
         } catch (e) {
-            fail(2);
+            fail(1);
         }
     },
     keys: function (win, fail) {
         try {
-            var vault = new Windows.Security.Credentials.PasswordVault();
-            var all = vault.retrieveAll();
-            var keys = [];
-            for(var i=0;i<all.Size;i++) {
-              keys.push(all.GetAt(i).UserName);
+            var values = Windows.Storage.ApplicationData.current.localSettings.values,
+                keys = [];
+            for (var p in values) {
+                if (values.hasOwnProperty(p)) {
+                    keys.push(p);
+                }
             }
             win(keys);
         } catch (e) {
             fail(2);
         }
-    },
+    }
 };
 
 require("cordova/exec/proxy").add("NativeStorage", NativeStorageProxy);
